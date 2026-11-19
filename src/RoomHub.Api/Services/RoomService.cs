@@ -5,19 +5,20 @@ namespace RoomHub.Api.Services;
 
 public class RoomService(RoomRepository rooms)
 {
-    public Room Create(string? name, int capacity)
+    public Room Create(string? name, int? capacity)
     {
+        // R1
         if (string.IsNullOrWhiteSpace(name))
             throw new BusinessException("InvalidName", "Room name is required.", 400);
 
-        if (capacity <= 0)
+        if (capacity is null or <= 0)
             throw new BusinessException("InvalidCapacity", "Capacity must be positive.", 400);
 
         var room = new Room
         {
             Id = Guid.NewGuid(),
             Name = name.Trim(),
-            Capacity = capacity
+            Capacity = capacity.Value
         };
 
         rooms.Add(room);
