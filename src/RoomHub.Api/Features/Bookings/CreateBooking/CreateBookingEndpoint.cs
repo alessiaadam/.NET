@@ -1,5 +1,7 @@
-using RoomHub.Api.Models;
-using RoomHub.Api.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
+using RoomHub.Api.Common;
+using RoomHub.Api.Common.Cqrs;
+using RoomHub.Api.Domain.Bookings;
 
 namespace RoomHub.Api.Features.Bookings.CreateBooking;
 
@@ -13,18 +15,26 @@ public static class CreateBookingEndpoint
 {
     public static IEndpointRouteBuilder MapCreateBooking(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/rooms/{roomId:guid}/bookings",
-                (Guid roomId, CreateBookingRequest? request, BookingService service) =>
-                {
-                    var booking = service.Create(
-                        roomId, request?.BookedBy, request?.StartUtc, request?.EndUtc, request?.Attendees);
-
-                    return Results.Created(
-                        $"/api/bookings/{booking.Id}",
-                        new CreateBookingResponse(booking.Id, booking.RoomId, booking.Status));
-                })
-            .WithTags("Bookings");
-
+        app.MapPost("/api/rooms/{roomId:guid}/bookings", Handle).WithTags("Bookings");
         return app;
+    }
+
+    private static async Task<Results<Created<CreateBookingResponse>, ProblemHttpResult>> Handle(
+        Guid roomId,
+        CreateBookingRequest? request,
+        ICommandHandler<CreateBookingCommand, Booking> handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new CreateBookingCommand(
+            roomId, request?.BookedBy, request?.StartUtc, request?.EndUtc, request?.Attendees);
+
+        var result = await handler.Handle(command, cancellationToken);
+        if (result.IsFailure)
+            return result.Error!.ToProblem();
+
+        var booking = result.Value;
+        return TypedResults.Created(
+            $"/api/bookings/{booking.Id}",
+            new CreateBookingResponse(booking.Id, booking.RoomId, booking.Status));
     }
 }

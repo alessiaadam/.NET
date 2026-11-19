@@ -1,8 +1,8 @@
-using RoomHub.Api.Models;
+using RoomHub.Api.Domain.Bookings;
 
 namespace RoomHub.Api.Repositories;
 
-// Starter: in-memory data. It is lost when the application restarts.
+// Still in-memory (level B). Replaced by EF Core + SQLite in level C.
 public class BookingRepository
 {
     private readonly List<Booking> _bookings = new();
@@ -24,11 +24,12 @@ public class BookingRepository
         }
     }
 
-    public List<Booking> ListForRoom(Guid roomId)
+    // R7: is there an ACTIVE booking of this room that overlaps the interval?
+    public bool HasActiveOverlap(Guid roomId, DateRange period)
     {
         lock (_lock)
         {
-            return _bookings.Where(b => b.RoomId == roomId).ToList();
+            return _bookings.Any(b => b.RoomId == roomId && b.ConflictsWith(period));
         }
     }
 }
