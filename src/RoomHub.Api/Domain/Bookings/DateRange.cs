@@ -5,6 +5,11 @@ namespace RoomHub.Api.Domain.Bookings;
 // Value object: a half-open UTC interval [StartUtc, EndUtc).
 public sealed record DateRange
 {
+    // For EF Core materialization only.
+    private DateRange()
+    {
+    }
+
     private DateRange(DateTime startUtc, DateTime endUtc)
     {
         StartUtc = startUtc;

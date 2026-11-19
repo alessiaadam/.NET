@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using RoomHub.Api.Common;
 using RoomHub.Api.Domain.Bookings;
-using RoomHub.Api.Repositories;
+using RoomHub.Api.Infrastructure.Persistence;
 
 namespace RoomHub.Api.Features.Bookings.GetBooking;
 
@@ -22,10 +23,14 @@ public static class GetBookingEndpoint
         return group;
     }
 
-    // Query (read-only): no command handler needed.
-    private static Results<Ok<GetBookingResponse>, ProblemHttpResult> Handle(Guid id, BookingRepository bookings)
+    // Query (read-only): no command handler, no change tracking.
+    private static async Task<Results<Ok<GetBookingResponse>, ProblemHttpResult>> Handle(
+        Guid id, RoomHubDbContext db, CancellationToken cancellationToken)
     {
-        var b = bookings.Get(id);
+        var b = await db.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
         if (b is null)
             return BookingErrors.NotFound.ToProblem();
 

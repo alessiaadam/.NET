@@ -4,6 +4,12 @@ namespace RoomHub.Api.Domain.Rooms;
 
 public sealed class Room
 {
+    // For EF Core materialization only.
+    private Room()
+    {
+        Name = null!;
+    }
+
     private Room(Guid id, string name, int capacity)
     {
         Id = id;

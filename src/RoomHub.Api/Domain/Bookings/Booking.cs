@@ -13,6 +13,13 @@ public sealed class Booking
 {
     public static readonly TimeSpan MaxDuration = TimeSpan.FromHours(4);
 
+    // For EF Core materialization only.
+    private Booking()
+    {
+        BookedBy = null!;
+        Period = null!;
+    }
+
     private Booking(Guid id, Guid roomId, string bookedBy, DateRange period, int attendees)
     {
         Id = id;

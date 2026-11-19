@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using RoomHub.Api.Common;
 using RoomHub.Api.Domain.Rooms;
-using RoomHub.Api.Repositories;
+using RoomHub.Api.Infrastructure.Persistence;
 
 namespace RoomHub.Api.Features.Rooms.GetRoom;
 
@@ -15,13 +16,18 @@ public static class GetRoomEndpoint
         return group;
     }
 
-    // Query (read-only): no command handler needed.
-    private static Results<Ok<GetRoomResponse>, ProblemHttpResult> Handle(Guid id, RoomRepository rooms)
+    // Query (read-only): no command handler, no change tracking.
+    private static async Task<Results<Ok<GetRoomResponse>, ProblemHttpResult>> Handle(
+        Guid id, RoomHubDbContext db, CancellationToken cancellationToken)
     {
-        var room = rooms.Get(id);
-        if (room is null)
-            return RoomErrors.NotFound.ToProblem();
+        var room = await db.Rooms
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new GetRoomResponse(r.Id, r.Name, r.Capacity))
+            .FirstOrDefaultAsync(cancellationToken);
 
-        return TypedResults.Ok(new GetRoomResponse(room.Id, room.Name, room.Capacity));
+        return room is null
+            ? RoomErrors.NotFound.ToProblem()
+            : TypedResults.Ok(room);
     }
 }
